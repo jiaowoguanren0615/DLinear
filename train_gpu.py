@@ -38,7 +38,7 @@ from models import DLinear, Informer, Reformer, FEDFormer, Transformer, AutoForm
 
 
 def get_args_parser():
-    parser = argparse.ArgumentParser('DLinear training and evaluation script', add_help=False)
+    parser = argparse.ArgumentParser('TimeSeriesModelSoups training and evaluation script', add_help=False)
     parser.add_argument('--batch_size', default=32, type=int)
     parser.add_argument('--epochs', default=5, type=int)
     parser.add_argument('--loss_type', default='RMSE', type=str,
@@ -365,7 +365,7 @@ def main(args):
     print('Training time {}'.format(total_time_str))
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('DLinear training and evaluation script', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser('TimeSeriesModelSoups training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
