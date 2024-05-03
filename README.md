@@ -23,6 +23,7 @@ Code mainly from [official source code](https://github.com/cure-lab/LTSF-Linear)
     ├── Transformer_model.py: Construct Transformer model
     ├── NLinear_model.py: Construct NLinear model
     ├── Linear_model.py: Construct Linear model
+    ├── ...: essential blocks(branches) for each model
 ├── util:
     ├── engine.py: Function code for a training/validation process
     ├── losses.py: RMSE Loss
