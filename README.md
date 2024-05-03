@@ -16,6 +16,13 @@ Code mainly from [official source code](https://github.com/cure-lab/LTSF-Linear)
     ├── mydataset.py: Customize reading data sets and define transforms data enhancement methods
 ├── models: DLinear Model
     ├── DLinear_model.py: Construct DLinear model
+    ├── Reformer_model.py: Construct Reformer model
+    ├── AutoFormer_model.py: Construct AutoFormer model
+    ├── Informer_model.py: Construct Informer model
+    ├── FEDFormer_model.py: Construct FEDFormer model
+    ├── Transformer_model.py: Construct Transformer model
+    ├── NLinear_model.py: Construct NLinear model
+    ├── Linear_model.py: Construct Linear model
 ├── util:
     ├── engine.py: Function code for a training/validation process
     ├── losses.py: RMSE Loss
