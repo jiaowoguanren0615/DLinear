@@ -29,7 +29,7 @@ Code mainly from [official source code](https://github.com/cure-lab/LTSF-Linear)
     ├── losses.py: RMSE Loss
     ├── lr_sched.py: create_lr_scheduler
     ├── masking.py: Construct TriangularCausalMask & ProbMask
-    ├── optimizer.py: finetune AdamW optimizer
+    ├── optimizer.py: finetune Lion optimizer
     ├── samplers.py: Define the parameter of "sampler" in DataLoader
     ├── time_features.py: build time feature data (year, month, hour)
     ├── tools.py: Define help functions (adjust_learning_rate, visual, stanstardscaler, EarlyStopping, etc.)
