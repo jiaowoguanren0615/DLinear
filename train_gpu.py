@@ -33,7 +33,7 @@ from util.lr_sched import create_lr_scheduler
 
 from datasets import build_dataset
 
-from models import *
+from models import DLinear, Informer, Reformer, FEDFormer, Transformer, AutoFormer, NLinear, Linear
 
 
 def get_args_parser():
@@ -54,18 +54,18 @@ def get_args_parser():
 
     # Model parameters
     parser.add_argument('--model', default='DLinear', type=str, metavar='MODEL',
-                        choices=['DLinear', 'Informer', 'Transformer', 'Autoformer'],
+                        choices=['DLinear', 'Informer', 'Reformer', 'FEDFormer', 'Transformer', 'AutoFormer', 'NLinear', 'Linear'],
                         help='Name of model to train')
     parser.add_argument('--train_only', type=bool, default=False,
                         help='perform training on full input dataset without validation and testing')
-    parser.add_argument('--seq_len', type=int, default=336)
-    parser.add_argument('--pred_len', type=int, default=96,
-                        choices=[96, 192, 336, 720])
+    parser.add_argument('--seq_len', type=int, default=96)
+    parser.add_argument('--pred_len', type=int, default=720,
+                        choices=[96, 192, 336, 720], help='24 36 48 60 for national_illness dataset')
     parser.add_argument('--label_len', type=int, default=48, help='start token length')
     parser.add_argument('--individual', action='store_true', default=False,
                         help='DLinear: a linear layer for each variate(channel) individually')
     # Formers
-    parser.add_argument('--embed_type', type=int, default=0,
+    parser.add_argument('--embed_type', type=int, default=3,
                         help='0: default 1: value embedding + temporal embedding + positional embedding 2: value embedding + temporal embedding 3: value embedding + positional embedding 4: value embedding')
     parser.add_argument('--enc_in', type=int, default=7,
                         help='encoder input size')  # DLinear with --individual, use this hyperparameter as the number of channels
@@ -193,9 +193,28 @@ def main(args):
     )
 
 
+    assert args.model in ['DLinear', 'Informer', 'Reformer', 'FEDFormer', 'Transformer', 'Autoformer', 'NLinear', 'Linear'], 'You must choose a right model'
+
     print(f"Creating model: {args.model}")
 
-    model = DLinear(args.seq_len, args.pred_len, args.individual, args.enc_in)
+    if args.model == 'DLinear':
+        model = DLinear(args.seq_len, args.pred_len, args.individual, args.enc_in)
+    elif args.model == 'Informer':
+        model = Informer(args)
+    elif args.model == 'Transformer':
+        model = Transformer(args)
+    elif args.model == 'AutoFormer':
+        model = AutoFormer(args)
+    elif args.model == 'Reformer':
+        model = Reformer(args)
+    elif args.model == 'FEDformer':
+        model = FEDFormer(args)
+    elif args.model == 'NLinear':
+        model = NLinear(args)
+    elif args.model == 'Linear':
+        model = Linear(args)
+    else:
+        model = DLinear(args.seq_len, args.pred_len, args.individual, args.enc_in)
 
     model.to(device)
 
@@ -333,6 +352,9 @@ def main(args):
         if args.output_dir and utils.is_main_process():
             with (output_dir / "log.txt").open("a") as f:
                 f.write(json.dumps(log_stats) + "\n")
+
+
+        torch.cuda.empty_cache()
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
