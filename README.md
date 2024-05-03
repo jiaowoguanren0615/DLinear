@@ -30,7 +30,7 @@ Code mainly from [official source code](https://github.com/cure-lab/LTSF-Linear)
 ```
 
 ## Precautions
-### Before you use the code to train your own data set, please first enter the ___train_gpu.py___ file and modify the ___data_root___, ___batch_size___, ___num_workers___ and ___nb_classes___ parameters.  
+Before you use the code to train your own data set, please first enter the ___train_gpu.py___ file and modify the ___data_root___, ___batch_size___, ___num_workers___ and ___nb_classes___ parameters.  
 
 
 ## Train this model
