@@ -28,6 +28,7 @@ from timm.utils import NativeScaler, get_state_dict, ModelEma
 from util.samplers import RASampler
 from util import utils as utils
 from util.optimizer import Lion
+from util.loss import loss_family
 from util.engine import train_one_epoch, evaluate
 from util.lr_sched import create_lr_scheduler
 
@@ -38,14 +39,16 @@ from models import DLinear, Informer, Reformer, FEDFormer, Transformer, AutoForm
 
 def get_args_parser():
     parser = argparse.ArgumentParser('DLinear training and evaluation script', add_help=False)
-    parser.add_argument('--batch-size', default=32, type=int)
+    parser.add_argument('--batch_size', default=32, type=int)
     parser.add_argument('--epochs', default=5, type=int)
+    parser.add_argument('--loss_type', default='RMSE', type=str,
+                        choices=['MAE', 'MSE', 'RMSE', 'MAPE', 'MSPE', 'RSE', 'CORR'])
 
     # Dataset parameters
-    parser.add_argument('--data', type=str, default='ETTh1', help='dataset type')
+    parser.add_argument('--data', type=str, default='ETTh2', help='dataset type')
     parser.add_argument('--root_path', type=str, default='/usr/local/MyObjData/TimeseriesData/',
                         help='root path of the data file')
-    parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
+    parser.add_argument('--data_path', type=str, default='ETTh2.csv', help='data file')
     parser.add_argument('--features', type=str, default='M',
                         help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
     parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
@@ -53,7 +56,7 @@ def get_args_parser():
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 
     # Model parameters
-    parser.add_argument('--model', default='DLinear', type=str, metavar='MODEL',
+    parser.add_argument('--model', default='Informer', type=str, metavar='MODEL',
                         choices=['DLinear', 'Informer', 'Reformer', 'FEDFormer', 'Transformer', 'AutoFormer', 'NLinear', 'Linear'],
                         help='Name of model to train')
     parser.add_argument('--train_only', type=bool, default=False,
@@ -85,8 +88,7 @@ def get_args_parser():
     parser.add_argument('--embed', type=str, default='timeF',
                         help='time features encoding, options:[timeF, fixed, learned]')
     parser.add_argument('--activation', type=str, default='gelu', help='activation')
-    parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
-    parser.set_defaults(output_attention=False)
+    parser.add_argument('--output_attention', default=False, type=bool, help='whether to output attention in ecoder')
 
     parser.add_argument('--model-ema', action='store_true')
     parser.add_argument('--no-model-ema', action='store_false', dest='model_ema')
@@ -95,8 +97,8 @@ def get_args_parser():
     parser.add_argument('--model-ema-force-cpu', action='store_true', default=False, help='')
 
     #Optimizer parameters
-    parser.add_argument('--lr', type=float, default=3e-4)
-    parser.add_argument('--weight_decay', type=float, default=1e-5)
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--weight_decay', type=float, default=2e-5)
     parser.add_argument('--clip-grad', type=float, default=0.02, metavar='NORM',
                         help='Clip gradient norm (default: None, no clipping)')
     parser.add_argument('--clip-mode', type=str, default='agc',
@@ -254,8 +256,10 @@ def main(args):
                                        warmup_epochs=1,
                                        warmup_factor=1e-3)
 
-    criterion = torch.nn.MSELoss()
 
+    # criterion = torch.nn.MSELoss()
+    print(f'Create loss calculation: {args.loss_type}')
+    criterion = loss_family[args.loss_type]
     best_loss = 100.0
 
     output_dir = Path(args.output_dir)
@@ -265,8 +269,8 @@ def main(args):
     if args.output_dir and utils.is_main_process():
         with (output_dir / "args.txt").open("a") as f:
             f.write(json.dumps(args.__dict__, indent=2) + "\n")
-    if args.resume or os.path.exists(f'{args.output_dir}/best_checkpoint.pth'):
-        args.resume = f'{args.output_dir}/best_checkpoint.pth'
+    if args.resume or os.path.exists(f'{args.output_dir}/{args.model}_sl{args.seq_len}_pl{args.pred_len}_ll{args.label_len}_et{args.embed_type}_dm{args.d_model}_best_checkpoint.pth'):
+        args.resume = f'{args.output_dir}/{args.model}_sl{args.seq_len}_pl{args.pred_len}_ll{args.label_len}_et{args.embed_type}_dm{args.d_model}_best_checkpoint.pth'
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(
                 args.resume, map_location='cpu', check_hash=True)
@@ -327,7 +331,7 @@ def main(args):
         if test_stats["valid_loss"] < best_loss:
             best_loss = test_stats["valid_loss"]
             if args.output_dir:
-                ckpt_path = os.path.join(output_dir, 'best_checkpoint.pth')
+                ckpt_path = os.path.join(output_dir, f'{args.model}_sl{args.seq_len}_pl{args.pred_len}_ll{args.label_len}_et{args.embed_type}_dm{args.d_model}_best_checkpoint.pth')
                 checkpoint_paths = [ckpt_path]
                 print("Saving checkpoint to {}".format(ckpt_path))
                 for checkpoint_path in checkpoint_paths:
@@ -342,7 +346,7 @@ def main(args):
                         'args': args,
                     }, checkpoint_path)
 
-        print(f'Min RMSE loss: {best_loss:.4f}')
+        print(f'Min {args.loss_type} loss: {best_loss:.4f}')
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                      **{f'test_{k}': v for k, v in test_stats.items()},

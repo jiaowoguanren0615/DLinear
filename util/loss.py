@@ -42,3 +42,14 @@ def metric(pred, true):
     corr = CORR(pred, true)
 
     return mae, mse, rmse, mape, mspe, rse, corr
+
+
+loss_family = {
+    'MAE': MAE,
+    'MSE': MSE,
+    'RMSE': RMSE,
+    'MAPE': MAPE,
+    'MSPE': MSPE,
+    'RSE': RSE,
+    'CORR': CORR
+}
